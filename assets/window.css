@@ -1,0 +1,163 @@
+/* Shared macOS-style foundation. Application CSS can override this layer. */
+@layer talos {
+  :root {
+    color-scheme: light dark;
+    --talosColor: #ec3013;
+    --accentColor: AccentColor;
+    --talos-accent: var(--talosColor);
+    --talos-label-primary: light-dark(#262626, #ededed);
+    --talos-label-secondary: light-dark(#737373, #aaa);
+    --talos-label-tertiary: light-dark(#969696, #858585);
+    --talos-label-danger: light-dark(#bf3020, #ff8978);
+    --talos-separator: light-dark(#00000018, #ffffff20);
+    --talos-control-background: light-dark(#0000000b, #ffffff17);
+    --talos-control-hover: light-dark(#00000014, #ffffff24);
+    --talos-control-pressed: light-dark(#00000022, #ffffff32);
+    --talos-field-background: light-dark(#ffffffb0, #ffffff0c);
+    --talos-selection: light-dark(#fff, #ffffff30);
+    /* Fallbacks for browser previews; Talos replaces these with AppKit's preferred fonts. */
+    --talos-font-largeTitle-size: 26px;
+    --talos-font-largeTitle-line-height: 32px;
+    --talos-font-largeTitle-weight: 400;
+    --talos-font-title-size: 22px;
+    --talos-font-title-line-height: 26px;
+    --talos-font-title-weight: 400;
+    --talos-font-title2-size: 17px;
+    --talos-font-title2-line-height: 22px;
+    --talos-font-title2-weight: 400;
+    --talos-font-title3-size: 15px;
+    --talos-font-title3-line-height: 20px;
+    --talos-font-title3-weight: 400;
+    --talos-font-headline-size: 13px;
+    --talos-font-headline-line-height: 16px;
+    --talos-font-headline-weight: 700;
+    --talos-font-body-size: 13px;
+    --talos-font-body-line-height: 16px;
+    --talos-font-body-weight: 400;
+    --talos-font-callout-size: 12px;
+    --talos-font-callout-line-height: 15px;
+    --talos-font-callout-weight: 400;
+    --talos-font-subheadline-size: 11px;
+    --talos-font-subheadline-line-height: 14px;
+    --talos-font-subheadline-weight: 400;
+    --talos-font-footnote-size: 10px;
+    --talos-font-footnote-line-height: 13px;
+    --talos-font-footnote-weight: 400;
+    --talos-font-caption-size: 10px;
+    --talos-font-caption-line-height: 13px;
+    --talos-font-caption-weight: 400;
+    --talos-font-caption2-size: 10px;
+    --talos-font-caption2-line-height: 13px;
+    --talos-font-caption2-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: var(--talos-font-body-size);
+    line-height: var(--talos-font-body-line-height);
+    color: var(--talos-label-primary);
+    accent-color: var(--accentColor);
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html,
+  body,
+  #root {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+    background: transparent;
+  }
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 10px;
+    background: var(--talos-control-background);
+    cursor: default;
+    white-space: nowrap;
+  }
+  button:hover:not(:disabled) {
+    background: var(--talos-control-hover);
+  }
+  button:active:not(:disabled) {
+    background: var(--talos-control-pressed);
+  }
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    opacity: 0.4;
+  }
+  :is(button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--accentColor) 35%, transparent);
+    outline-offset: 2px;
+  }
+  button[data-variant="primary"] {
+    background: var(--accentColor);
+    color: white;
+    font-weight: 500;
+  }
+  button[data-variant="primary"]:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accentColor), black 10%);
+  }
+  button[data-variant="primary"]:active:not(:disabled) {
+    background: color-mix(in srgb, var(--accentColor), black 20%);
+  }
+  button[data-variant="plain"] {
+    background: transparent;
+  }
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+    border: 1px solid var(--talos-separator);
+    border-radius: 5px;
+    padding: 4px 6px;
+    background: var(--talos-field-background);
+  }
+  input[type="number"] {
+    font-variant-numeric: tabular-nums;
+  }
+  hr {
+    border: 0;
+    border-top: 1px solid var(--talos-separator);
+  }
+  .talos-segments {
+    display: flex;
+    border-radius: 6px;
+    background: var(--talos-control-background);
+    padding: 2px;
+  }
+  .talos-segments button {
+    flex: 1;
+    padding: 3px 9px;
+    border-radius: 4px;
+    background: transparent;
+    font-size: var(--talos-font-subheadline-size);
+  }
+  .talos-segments button[aria-pressed="true"] {
+    background: var(--talos-selection);
+    box-shadow: 0 1px 3px #0002;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      /* biome-ignore lint/complexity/noImportantStyles: accessibility preference overrides extension smooth scrolling. */
+      scroll-behavior: auto !important;
+    }
+  }
+}

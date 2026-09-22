@@ -1,0 +1,51 @@
+name: Build and publish SDK
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sdk-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - run: npm install --global npm@11
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - name: Pack SDK
+        run: npm pack --ignore-scripts
+      - uses: actions/upload-artifact@v7
+        with:
+          name: talos-sdk
+          path: '*.tgz'
+          if-no-files-found: error
+      - name: Publish new versions through npm trusted publishing
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          node --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const { name, version } = JSON.parse(readFileSync('package.json', 'utf8'));
+          const response = await fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}/${version}`);
+          if (response.ok) {
+            console.log(`${name}@${version} already exists; nothing to publish.`);
+          } else if (response.status === 404) {
+            execFileSync('npm', ['publish', `thom1606-talos-sdk-${version}.tgz`, '--access', 'public', '--ignore-scripts'], { stdio: 'inherit' });
+          } else {
+            throw new Error(`Could not check npm version: HTTP ${response.status}`);
+          }
+          JS

@@ -1,0 +1,82 @@
+{
+  "name": "@thom1606/talos-sdk",
+  "version": "3.0.0",
+  "description": "TypeScript SDK and command-line tools for building Talos extensions",
+  "type": "module",
+  "bin": {
+    "talos": "dist/cli.js"
+  },
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./window": {
+      "types": "./dist/window.d.ts",
+      "import": "./dist/window.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "assets"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "tsc --project tsconfig.json",
+    "postbuild": "node scripts/postbuild.mjs",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "prepack": "npm run build"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.29.9",
+    "@babel/types": "^7.29.8",
+    "@inquirer/prompts": "8.7.2",
+    "archiver": "8.0.0",
+    "chalk": "6.0.0",
+    "commander": "15.0.0",
+    "esbuild": "0.28.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@types/node": "24.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.3.0",
+    "react": "^19.2.0",
+    "rimraf": "6.1.3",
+    "typescript": "7.0.2",
+    "react-dom": "^19.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thom1606/talos-sdk.git"
+  },
+  "homepage": "https://github.com/thom1606/talos-sdk#readme",
+  "bugs": {
+    "url": "https://github.com/thom1606/talos-sdk/issues"
+  }
+}
