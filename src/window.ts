@@ -39,6 +39,20 @@ function encode(bytes: Uint8Array): string {
 }
 
 export const talosWindow = Object.freeze({
+  /** Request work from this window's onRequest handler. JSON only; files stay on disk. */
+  async invoke<Result = unknown>(method: string, payload: unknown = null): Promise<Result> {
+    if (!method.trim() || method.length > 128) throw new Error('Invalid request name');
+    const payloadJSON = JSON.stringify(payload);
+    if (!payloadJSON || new TextEncoder().encode(payloadJSON).length > 32_768)
+      throw new Error('Request exceeds 32 KB');
+    return (await bridge().request({ method: 'invoke', name: method, payloadJSON })) as Result;
+  },
+  /** A local, window-scoped URL for an activation file (including streaming media previews). */
+  fileURL(file: TalosFile): string {
+    const index = bridge().context.files.findIndex((input) => input.path === file.path);
+    if (index < 0) throw new Error('This file was not supplied to the window');
+    return `talos-window://bundle/__talos_input/${index}`;
+  },
   /** @deprecated Pass React props and use useTalos() for activation context. */
   data<T = unknown>(): T {
     return bridge().data as T;

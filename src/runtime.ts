@@ -1,11 +1,22 @@
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import type { ReactNode } from 'react';
 import { activationContext } from './activation-context.js';
+import type { TalosContext } from './index.js';
 import { reactWindowPage, serializeWindowTree } from './window-tree.js';
 
 /** A native preview window containing Markdown or React components. */
 export interface TalosWindowOptions {
   title: string;
+  /** Handle JSON requests from this window in Node, with its original activation context.
+   * Cancel subprocesses when signal aborts (window closed or request timed out).
+   */
+  onRequest?: (
+    method: string,
+    payload: unknown,
+    context: TalosContext,
+    signal: AbortSignal,
+  ) => unknown | Promise<unknown>;
   /** JSX containing imported .tsx components and serializable props. */
   children?: ReactNode;
   /** Markdown rendered with native typography. Use children for interactive React content. */
@@ -95,12 +106,23 @@ export function openWindow(options: TalosWindowOptions): void {
   validateDimension(options.width, 'Window width');
   validateDimension(options.height, 'Window height');
   const context = activationContext();
+  const windowID = randomUUID();
+  const register = (
+    globalThis as typeof globalThis & {
+      [key: symbol]:
+        | ((id: string, context: TalosContext, handler: TalosWindowOptions['onRequest']) => void)
+        | undefined;
+    }
+  )[Symbol.for('talos.registerWindow')];
+  if (options.onRequest && !register) throw new Error('Window requests require a newer Talos app');
+  register?.(windowID, context, options.onRequest);
 
   sendRuntimeMessage({
     protocol: 'talos',
     version: 1,
     method: 'openWindow',
     parameters: {
+      windowID,
       title: options.title,
       content: options.content,
       page: hasChildren ? reactWindowPage : options.page,

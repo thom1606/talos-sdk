@@ -202,7 +202,7 @@ async function buildWindows(
       `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src data: blob:; font-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <link rel="stylesheet" href="talos.css">
 ${hasCSS ? '<link rel="stylesheet" href="app.css">' : ''}</head>
 <body><div id="root"></div><script src="locales.js"></script><script src="app.js"></script></body></html>`,
