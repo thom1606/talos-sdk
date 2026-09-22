@@ -50,6 +50,8 @@ export interface TalosActionDefinition {
   icon?: string;
   description?: string;
   supportedFileTypes: string[];
+  /** Command names shown as a wheel submenu. Referenced commands are hidden from the root palette. */
+  subcommands?: string[];
   settings?: TalosSettingDefinition[];
 }
 

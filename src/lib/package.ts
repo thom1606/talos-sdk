@@ -51,6 +51,17 @@ export function validatePackage(packageJson: unknown): asserts packageJson is Ta
   }
   const commandNames = new Set<string>();
   for (const command of packageJson.commands) validateCommand(command, commandNames);
+  const commands = packageJson.commands as TalosActionDefinition[];
+  function visit(command: TalosActionDefinition, ancestors: Set<string>) {
+    if (ancestors.has(command.name) || ancestors.size >= 8)
+      throw new Error('Subcommands must not contain cycles or exceed eight levels');
+    for (const name of command.subcommands ?? []) {
+      const child = commands.find((candidate) => candidate.name === name);
+      if (!child) throw new Error(`Unknown subcommand: ${name}`);
+      visit(child, new Set([...ancestors, command.name]));
+    }
+  }
+  for (const command of commands) visit(command, new Set());
 }
 
 function validateCommand(
@@ -75,6 +86,17 @@ function validateCommand(
     throw new Error(`Command ${value.name} has an invalid supported file type`);
   }
 
+  if (
+    value.subcommands !== undefined &&
+    (!Array.isArray(value.subcommands) ||
+      !value.subcommands.length ||
+      !value.subcommands.every(nonEmptyString) ||
+      new Set(value.subcommands).size !== value.subcommands.length)
+  ) {
+    throw new Error(
+      `Command ${value.name} subcommands must be a non-empty list of unique command names`,
+    );
+  }
   if (value.settings !== undefined && !Array.isArray(value.settings)) {
     throw new Error(`Command ${value.name} settings must be an array`);
   }
