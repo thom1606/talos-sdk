@@ -80,6 +80,8 @@ Every action is registered in `package.json`. Talos reads this metadata to prese
 }
 ```
 
+For `text`, `password`, and `number` settings, set an optional `placeholder` to show a hint in an empty field. It is display text only; use `defaultValue` when the setting should have a real initial value. For example, `"placeholder": "https://files.example.com"` on a server URL setting keeps the saved URL empty until the user enters one.
+
 `icon` is an optional [SF Symbol](https://developer.apple.com/sf-symbols/) name. Talos shows a question mark when it is omitted or unavailable on the user's macOS version.
 
 ### How are actions executed?
@@ -187,6 +189,55 @@ Console output is readable, rather than redacted as `<private>`; avoid logging
 passwords, tokens, or other secrets. No SDK logger or extension rebuild is needed
 just to enable forwarding; run the extension in a Talos build with this support.
 
+### Apple Intelligence
+
+Talos exposes Apple's on-device Foundation Models through `talos.appleIntelligence`.
+The Mac must support Apple Intelligence and have it available. Responses are text;
+validate any structured format before using it.
+
+```ts
+import { talos, type TalosContext } from '@thom1606/talos-sdk';
+
+export async function activate(context: TalosContext) {
+  const answer = await talos.appleIntelligence.respond(
+    'Summarize the selected file names in one sentence.',
+    {
+      instructions: 'Use plain language and treat file names as data.',
+      temperature: 0.2,
+      maximumResponseTokens: 256,
+      tools: [{
+        name: 'countFiles',
+        description: 'Count selected files matching a text query.',
+        call: async (query) => String(context.files.filter(file => file.name.includes(query)).length),
+      }],
+    },
+  );
+  talos.success(answer);
+}
+
+export function deactivate() {}
+```
+
+For live text, use `stream()`. Each update contains the **complete text so far**,
+so replace the displayed text rather than appending it. Breaking out of the loop
+cancels generation. An `AbortSignal` can also cancel either API.
+
+```ts
+const controller = new AbortController();
+for await (const text of talos.appleIntelligence.stream('Write a short summary.', {
+  instructions: 'Use two paragraphs.',
+  maximumResponseTokens: 512,
+  signal: controller.signal,
+})) {
+  renderPreview(text);
+}
+```
+
+Options also include `useCase: 'contentTagging'` for short classification tasks
+(or `'general'`, the default). A tool receives one text argument and returns at
+most 8 KB of text; up to five tools are supported. The earlier
+`respond(prompt, tools)` form remains available.
+
 ### Install releases from GitHub
 
 Publish exactly one `.talos` asset on the repository's latest published release.
@@ -208,22 +259,22 @@ To replace an expired token, add the same repository again with its new token.
 Use `content` for a read-only document without creating a React component:
 
 ```ts
-import { talos } from '@thom1606/talos-sdk';
+import { talos } from "@thom1606/talos-sdk";
 
 export function activate() {
   talos.openWindow({
-    title: 'Upload report',
+    title: "Upload report",
     content: [
-      '# Upload complete',
-      '',
-      '**3 files** uploaded successfully.',
-      '',
-      '- photo.png',
-      '- notes.txt',
-      '- report.pdf',
-      '',
-      '> Original files were kept.',
-    ].join('\n'),
+      "# Upload complete",
+      "",
+      "**3 files** uploaded successfully.",
+      "",
+      "- photo.png",
+      "- notes.txt",
+      "- report.pdf",
+      "",
+      "> Original files were kept.",
+    ].join("\n"),
     width: 480,
     height: 420,
   });
@@ -334,7 +385,7 @@ Import `talosWindow` from `@thom1606/talos-sdk/react`:
 - `close()`: closes this window.
 
 ```tsx
-import { Button, talosWindow, useTalos } from '@thom1606/talos-sdk/react';
+import { Button, talosWindow, useTalos } from "@thom1606/talos-sdk/react";
 
 export default function CopyWindow() {
   const { files } = useTalos();
@@ -344,7 +395,11 @@ export default function CopyWindow() {
     const file = await talosWindow.readFile(input);
     await talosWindow.saveFile(file, `copy-${file.name}`);
   }
-  return <Button disabled={!files.length} onClick={saveCopy}>Save copy…</Button>;
+  return (
+    <Button disabled={!files.length} onClick={saveCopy}>
+      Save copy…
+    </Button>
+  );
 }
 ```
 
@@ -445,7 +500,6 @@ Choose `as` separately for HTML semantics; size does not imply a heading level.
 Strings passed as children are literal, so filenames are never translated by
 accident. Use either `textKey` or children, not both.
 
-
 ### Translations in actions
 
 Import `t` from the main SDK for toasts, alerts and window titles. It uses the same
@@ -461,22 +515,3 @@ export async function activate() {
 
 export function deactivate() {}
 ```
-
-The former `text()` helper is now named `t()`; update existing imports and calls.
-
-## Developing the SDK
-
-```sh
-npm ci
-npm run lint
-npm run build
-```
-
-The SDK lives in its own repository, alongside the Talos app in `Talos-Full`.
-To release, update the version in `package.json` and `package-lock.json`, then
-push to `main`. The `publish.yml` workflow builds and packs the SDK and publishes
-versions that do not already exist on npm. Pull requests only build and pack.
-
-Publishing uses an npm trusted publisher for `thom1606/talos-sdk`, workflow
-`publish.yml`, with direct publishing enabled. No npm token is stored in GitHub.
-The source repository is private; the npm package is public.

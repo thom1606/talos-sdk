@@ -123,6 +123,9 @@ async function promptForSetting(
     ],
   });
   const description = await input({ message: 'Setting description (optional)' });
+  const placeholder = ['text', 'password', 'number'].includes(type)
+    ? await input({ message: 'Placeholder (optional)' })
+    : undefined;
   const required = await confirm({ message: 'Required?', default: false });
   const options = type === 'select' ? await promptForOptions() : undefined;
   const defaultValue = await promptForDefault(type, options);
@@ -132,6 +135,7 @@ async function promptForSetting(
     displayName: displayName.trim(),
     type,
     ...(description.trim() ? { description: description.trim() } : {}),
+    ...(placeholder?.trim() ? { placeholder: placeholder.trim() } : {}),
     ...(required ? { required: true } : {}),
     ...(defaultValue === undefined ? {} : { defaultValue }),
     ...(options ? { options } : {}),

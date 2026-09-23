@@ -1,6 +1,6 @@
 {
   "name": "@thom1606/talos-sdk",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "TypeScript SDK and command-line tools for building Talos extensions",
   "type": "module",
   "bin": {

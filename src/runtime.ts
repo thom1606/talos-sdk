@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import type { ReactNode } from 'react';
 import { activationContext } from './activation-context.js';
+import { respondWithAppleIntelligence, streamAppleIntelligence } from './apple-intelligence.js';
 import type { TalosContext } from './index.js';
 import { reactWindowPage, serializeWindowTree } from './window-tree.js';
 
@@ -83,6 +84,15 @@ export function done(): void {
     parameters: {},
   });
 }
+
+export type {
+  AppleIntelligenceOptions,
+  AppleIntelligenceTool,
+} from './apple-intelligence.js';
+export {
+  respondWithAppleIntelligence,
+  streamAppleIntelligence,
+} from './apple-intelligence.js';
 
 /** Open a native preview window with React children or Markdown content. */
 export function openWindow(options: TalosWindowOptions): void {
@@ -194,6 +204,10 @@ export const talos = Object.freeze({
   done,
   openWindow,
   runAppleScript,
+  appleIntelligence: Object.freeze({
+    respond: respondWithAppleIntelligence,
+    stream: streamAppleIntelligence,
+  }),
 });
 
 interface AppleScriptExecutionOptions {

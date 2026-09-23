@@ -38,6 +38,8 @@ export interface TalosSettingDefinition {
   displayName: string;
   type: TalosSettingType;
   description?: string;
+  /** Hint shown in an empty text, password, or number field; never saved as its value. */
+  placeholder?: string;
   required?: boolean;
   defaultValue?: string | number | boolean;
   options?: string[];
@@ -66,8 +68,20 @@ export interface TalosPackageConfiguration {
 export type { TextParameters } from './localization.js';
 export { t } from './localization.js';
 export type {
+  AppleIntelligenceOptions,
+  AppleIntelligenceTool,
   RunAppleScriptOptions,
   RunAppleScriptOutput,
   TalosWindowOptions,
 } from './runtime.js';
-export { done, failed, loading, openWindow, success, talos, toast } from './runtime.js';
+export {
+  done,
+  failed,
+  loading,
+  openWindow,
+  respondWithAppleIntelligence,
+  streamAppleIntelligence,
+  success,
+  talos,
+  toast,
+} from './runtime.js';

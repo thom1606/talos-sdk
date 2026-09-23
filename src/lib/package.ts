@@ -123,6 +123,16 @@ function validateSetting(
   if (!['text', 'password', 'number', 'boolean', 'select'].includes(String(value.type))) {
     throw new Error(`Setting ${value.name} has an unsupported type`);
   }
+  if (value.placeholder !== undefined) {
+    if (!['text', 'password', 'number'].includes(String(value.type))) {
+      throw new Error(
+        `Only text, password, and number settings can define a placeholder (${value.name})`,
+      );
+    }
+    if (!nonEmptyString(value.placeholder)) {
+      throw new Error(`Setting ${value.name} needs a non-empty placeholder`);
+    }
+  }
   if (value.required !== undefined && typeof value.required !== 'boolean') {
     throw new Error(`Setting ${value.name} required must be true or false`);
   }
