@@ -21,6 +21,7 @@ export async function initializeProject(
   await assertDirectoryDoesNotExist(root);
   await mkdir(join(root, 'src'), { recursive: true });
   await mkdir(join(root, 'locales'), { recursive: true });
+  await mkdir(join(root, '.github/workflows'), { recursive: true });
 
   const packageJson: TalosPackageJson = {
     name: bundleId,
@@ -30,6 +31,7 @@ export async function initializeProject(
     scripts: {
       action: 'talos action',
       build: 'talos build',
+      typecheck: 'tsc --noEmit',
     },
     devDependencies: {
       '@thom1606/talos-sdk': `^${sdkVersion}`,
@@ -69,6 +71,7 @@ export async function initializeProject(
       },
     }),
     writeFile(join(root, 'src/index.tsx'), extensionSource(), 'utf8'),
+    writeFile(join(root, '.github/workflows/build.yml'), workflowSource(bundleId), 'utf8'),
     writeJsonFile(join(root, 'tsconfig.json'), {
       compilerOptions: {
         target: 'ES2022',
@@ -144,5 +147,56 @@ async function runExample(context: TalosContext): Promise<void> {
 export async function deactivate(): Promise<void> {
   // Release long-lived resources here.
 }
+`;
+}
+
+function workflowSource(bundleId: string): string {
+  return `name: Build Talos extension
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Read package version
+        id: package
+        run: echo "version=$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${bundleId}-\${{ steps.package.outputs.version }}
+          path: dist/${bundleId}.talos
+          if-no-files-found: error
+      - name: Publish versioned release
+        env:
+          GH_TOKEN: \${{ github.token }}
+          VERSION: \${{ steps.package.outputs.version }}
+        run: |
+          tag="v\${VERSION}"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" dist/${bundleId}.talos \\
+              --target "$GITHUB_SHA" \\
+              --title "$tag" \\
+              --notes "Built from package.json version \${VERSION}."
+          fi
 `;
 }

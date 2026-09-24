@@ -33,7 +33,13 @@ Asks for the extension name and a bundle ID such as `thoms-talos-actions`. It cr
 - `tsconfig.json` with `jsx: "react-jsx"` enabled by default;
 - React, React DOM, and their TypeScript types in `package.json`;
 - `locales/en.json`, linked from `package.json`;
+- `.github/workflows/build.yml`, which builds on pushes to `main` and publishes a
+  `.talos` asset in a versioned GitHub Release;
 - npm scripts for adding actions and building the extension.
+
+The release tag uses `package.json`'s version. Increase that version to publish
+a new release. CI uses `npm ci` when a lockfile is present and `npm install` for
+a project pushed before its first local install.
 
 Existing project files are never overwritten.
 
