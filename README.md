@@ -295,8 +295,9 @@ export function deactivate() {}
 Talos renders headings, paragraphs, emphasis, links, nested ordered/unordered
 lists, blockquotes, code blocks, tables and dividers using native views. Text is
 selectable; ordinary text works too. Web and email links open through macOS.
-HTML is not executed and remote images are not fetched. Use React `children`
-for interactive controls or image content.
+Markdown images are displayed, including relative images beside a dropped
+Markdown file and images hosted over HTTP(S). HTML is not executed. Use React
+`children` for interactive controls.
 
 ### React windows
 
