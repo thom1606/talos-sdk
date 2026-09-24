@@ -86,6 +86,10 @@ Every action is registered in `package.json`. Talos reads this metadata to prese
 }
 ```
 
+`supportedFileTypes` accepts macOS UTType identifiers, filename extensions such as
+`.md` and `.markdown`, or `*` for all files. Extensions match case-insensitively,
+so adding another custom extension only requires changing the action package.
+
 For `text`, `password`, and `number` settings, set an optional `placeholder` to show a hint in an empty field. It is display text only; use `defaultValue` when the setting should have a real initial value. For example, `"placeholder": "https://files.example.com"` on a server URL setting keeps the saved URL empty until the user enters one.
 
 `icon` is an optional [SF Symbol](https://developer.apple.com/sf-symbols/) name. Talos shows a question mark when it is omitted or unavailable on the user's macOS version.

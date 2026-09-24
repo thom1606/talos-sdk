@@ -73,7 +73,7 @@ async function promptForAction(): Promise<TalosActionDefinition> {
     required: true,
   });
   const customFileTypes = await input({
-    message: 'Additional UTTypes, separated by commas (optional)',
+    message: 'Additional UTTypes or extensions like .md, separated by commas (optional)',
   });
   const supportedFileTypes = [
     ...selectedFileTypes,

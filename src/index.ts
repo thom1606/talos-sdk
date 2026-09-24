@@ -51,6 +51,7 @@ export interface TalosActionDefinition {
   /** SF Symbol name used to represent this action in Talos. */
   icon?: string;
   description?: string;
+  /** UTType identifiers, filename extensions such as ".md", or "*" for all files. */
   supportedFileTypes: string[];
   /** Command names shown as a wheel submenu. Referenced commands are hidden from the root palette. */
   subcommands?: string[];
