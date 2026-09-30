@@ -6,6 +6,7 @@ export function activationContext(): TalosContext {
     Symbol.for('talos.activationContext')
   ];
   const context = read?.();
-  if (!context) throw new Error('openWindow must be called from an activate invocation in Talos.');
+  if (!context)
+    throw new Error('Talos presentation APIs must be called from an active Talos invocation.');
   return context;
 }

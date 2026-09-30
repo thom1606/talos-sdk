@@ -73,12 +73,14 @@ export type {
   AppleIntelligenceTool,
   RunAppleScriptOptions,
   RunAppleScriptOutput,
+  TalosQuickLookOptions,
   TalosWindowOptions,
 } from './runtime.js';
 export {
   done,
   failed,
   loading,
+  openQuickLook,
   openWindow,
   respondWithAppleIntelligence,
   streamAppleIntelligence,

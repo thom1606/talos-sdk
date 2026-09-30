@@ -169,6 +169,39 @@ visible until it is replaced; `toast`, `success`, and `failed` dismiss themselve
 Call `talos.done()` to dismiss a loading toast without showing a final message.
 Windows have native preview chrome. Use `content` for native Markdown or
 `children: <YourWindow />` for interactive React content.
+
+### Quick Look
+
+Any extension can open the standard macOS Quick Look panel (Finder's spacebar
+preview), without window assets or a custom interface:
+
+```ts
+import { talos, type TalosContext } from "@thom1606/talos-sdk";
+
+export function activate(context: TalosContext) {
+  // Preview the complete activation selection with rendered Markdown.
+  talos.openQuickLook();
+
+  // Or choose a subset and its order.
+  talos.openQuickLook({ files: context.files.slice(0, 1) });
+
+  // Use the original files' system previews without Talos Markdown rendering.
+  talos.openQuickLook({ files: context.files, renderMarkdown: false });
+}
+```
+
+`openQuickLook` is also available as a named import. `TalosQuickLookOptions`
+accepts `files` (defaults to the current activation) and `renderMarkdown`
+(defaults to `true`). Files must belong to the current activation; the host checks
+this again before opening them. An empty selection throws.
+
+Requires SDK 3.4.0 and a Talos build with Quick Look support. One standard panel
+navigates through files, images, and folders in the supplied order. Markdown
+(`.md`, `.markdown`, and extensionless `README`) renders with formatting and
+images by default. Originals are preserved, and temporary rendered documents
+are removed when the panel closes. Native panel ownership, drop permissions,
+and cleanup are handled by Talos for every extension.
+
 `alert` and `confirm` are async JavaScript globals backed by native macOS dialogs.
 Always await them so the action resumes after the user responds.
 `talos.runAppleScript` can execute either AppleScript or JavaScript for Automation

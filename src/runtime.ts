@@ -1,9 +1,10 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { isAbsolute } from 'node:path';
 import type { ReactNode } from 'react';
 import { activationContext } from './activation-context.js';
 import { respondWithAppleIntelligence, streamAppleIntelligence } from './apple-intelligence.js';
-import type { TalosContext } from './index.js';
+import type { TalosContext, TalosFile } from './index.js';
 import { reactWindowPage, serializeWindowTree } from './window-tree.js';
 
 /** A native preview window containing Markdown or React components. */
@@ -30,10 +31,18 @@ export interface TalosWindowOptions {
   height?: number;
 }
 
+/** Options for Finder's standard spacebar preview panel. */
+export interface TalosQuickLookOptions {
+  /** Files from this activation, in preview order. Defaults to the entire selection. */
+  files?: readonly TalosFile[];
+  /** Render Markdown/README documents with formatting. Defaults to true. */
+  renderMarkdown?: boolean;
+}
+
 interface RuntimeMessage {
   protocol: 'talos';
   version: 1;
-  method: 'loading' | 'toast' | 'success' | 'failed' | 'done' | 'openWindow';
+  method: 'loading' | 'toast' | 'success' | 'failed' | 'done' | 'openWindow' | 'openQuickLook';
   parameters: Record<string, unknown>;
 }
 
@@ -117,15 +126,7 @@ export function openWindow(options: TalosWindowOptions): void {
   validateDimension(options.height, 'Window height');
   const context = activationContext();
   const windowID = randomUUID();
-  const register = (
-    globalThis as typeof globalThis & {
-      [key: symbol]:
-        | ((id: string, context: TalosContext, handler: TalosWindowOptions['onRequest']) => void)
-        | undefined;
-    }
-  )[Symbol.for('talos.registerWindow')];
-  if (options.onRequest && !register) throw new Error('Window requests require a newer Talos app');
-  register?.(windowID, context, options.onRequest);
+  registerWindow(windowID, context, options.onRequest);
 
   sendRuntimeMessage({
     protocol: 'talos',
@@ -143,6 +144,47 @@ export function openWindow(options: TalosWindowOptions): void {
       filePaths: context.files.map((file) => file.path),
     },
   });
+}
+
+/** Open macOS Quick Look for this activation's files or an ordered subset. */
+export function openQuickLook(options: TalosQuickLookOptions = {}): void {
+  const context = activationContext();
+  const files = options.files ?? context.files;
+  if (files.length === 0) throw new Error('Quick Look requires at least one file or folder');
+  if (options.renderMarkdown !== undefined && typeof options.renderMarkdown !== 'boolean') {
+    throw new TypeError('renderMarkdown must be a boolean');
+  }
+  const allowedPaths = new Set(context.files.map((file) => file.path));
+  const filePaths = files.map((file) => {
+    if (!isAbsolute(file.path) || !allowedPaths.has(file.path)) {
+      throw new Error('Quick Look files must belong to the current activation');
+    }
+    return file.path;
+  });
+  const windowID = randomUUID();
+  registerWindow(windowID, context);
+  sendRuntimeMessage({
+    protocol: 'talos',
+    version: 1,
+    method: 'openQuickLook',
+    parameters: { windowID, filePaths, renderMarkdown: options.renderMarkdown ?? true },
+  });
+}
+
+function registerWindow(
+  windowID: string,
+  context: TalosContext,
+  handler?: TalosWindowOptions['onRequest'],
+): void {
+  const register = (
+    globalThis as typeof globalThis & {
+      [key: symbol]:
+        | ((id: string, context: TalosContext, handler: TalosWindowOptions['onRequest']) => void)
+        | undefined;
+    }
+  )[Symbol.for('talos.registerWindow')];
+  if (handler && !register) throw new Error('Window requests require a newer Talos app');
+  register?.(windowID, context, handler);
 }
 
 /** Execute AppleScript or JavaScript for Automation on macOS. */
@@ -203,6 +245,7 @@ export const talos = Object.freeze({
   failed,
   done,
   openWindow,
+  openQuickLook,
   runAppleScript,
   appleIntelligence: Object.freeze({
     respond: respondWithAppleIntelligence,
