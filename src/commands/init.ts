@@ -126,26 +126,18 @@ async function assertDirectoryDoesNotExist(root: string): Promise<void> {
 }
 
 function extensionSource(): string {
-  return `import type { TalosContext } from '@thom1606/talos-sdk';
+  return `import { defineActions } from '@thom1606/talos-sdk';
 
 /** Called by Talos whenever the user runs one of this extension's actions. */
-export async function activate(context: TalosContext): Promise<void> {
-  switch (context.action) {
-    case 'example':
-      await runExample(context);
-      return;
-    default:
-      throw new Error(\`Unknown Talos action: \${context.action}\`);
-  }
-}
-
-async function runExample(context: TalosContext): Promise<void> {
-  console.log('Example action activated', context.config);
-}
+export const activate = defineActions({
+  example: async (context) => {
+    console.log('Example action activated', context.config);
+  },
+});
 
 /** Called before Talos shuts down or removes this extension. */
 export async function deactivate(): Promise<void> {
-  // Release long-lived resources here.
+  // Release long-lived resources here. SDK operations are cancelled by Talos.
 }
 `;
 }

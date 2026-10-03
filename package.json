@@ -1,6 +1,6 @@
 {
   "name": "@thom1606/talos-sdk",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "TypeScript SDK and command-line tools for building Talos extensions",
   "type": "module",
   "bin": {
@@ -19,6 +19,10 @@
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
     }
   },
   "files": [
@@ -32,7 +36,8 @@
     "postbuild": "node scripts/postbuild.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "test": "npm run build && node --test tests/*.test.mjs && tsc --project tests/types/tsconfig.json"
   },
   "engines": {
     "node": ">=22.13.0"

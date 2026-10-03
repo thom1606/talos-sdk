@@ -559,3 +559,57 @@ export async function activate() {
 
 export function deactivate() {}
 ```
+
+## Typed action handlers and cancellation
+
+`defineActions` registers explicit command names instead of dispatching arbitrary strings. Each
+handler receives its literal action name and a Node-only `TalosActivationContext` with an
+`AbortSignal`. Existing `activate` / `deactivate` exports remain supported. These scopes require
+an updated Talos app; the serializable `TalosContext` returned by `useTalos()` has no Node signal.
+
+```ts
+import { defineAction, defineActions } from '@thom1606/talos-sdk';
+import { runProcess, writeOutput } from '@thom1606/talos-sdk/node';
+
+export const activate = defineActions({
+  resize: defineAction(values => {
+    if (typeof values.width !== 'number' || values.width <= 0) {
+      throw new TypeError('width must be a positive number');
+    }
+    return { width: values.width };
+  }, async context => {
+    for (const file of context.files) {
+      context.signal.throwIfAborted();
+      await writeOutput(file, { suffix: '-resized', extension: 'png' }, async temporary => {
+        await runProcess('/usr/bin/sips', [
+          '--resampleWidth', String(context.config.width), file.path, '--out', temporary,
+        ]);
+      });
+    }
+  }),
+});
+export function deactivate() {}
+```
+
+`defineAction` infers the handler's configuration from your parser. The parser validates values
+at runtime before the typed handler runs; type assertions alone do not validate external data.
+
+Node helpers inherit the current action or window-request signal. An explicit `signal` adds a
+second cancellation source. `runProcess` never invokes a shell, bounds captured stdout (1 MiB
+by default), retains only the last 8 KiB of stderr, and defaults to a 30-second timeout. On macOS
+and other POSIX systems it stops the process group, escalates from SIGTERM to SIGKILL, and waits
+for shutdown before returning. On Windows it terminates the direct child. Pass a larger positive
+`timeout` for long-running work.
+
+`writeOutput` stages a regular file in a private directory beside the input, then atomically
+links it to an available filename. Existing files and originals remain untouched; collisions
+get numbered names. Failure, cancellation, or a callback returning `false` removes staged data.
+A completed publication is the operation's commit point. Media processing remains owned by
+the extension. These are Node helpers; browser windows must keep using `talosWindow`.
+
+The host aborts an action's signal when its handler finishes, when it is cancelled, or when the
+extension unloads. Await the work that belongs to an action. Window requests get independent
+scopes, so a returned `activate` handler does not cancel later interactions in its window.
+A window request's scope ends when its handler finishes or the window/request is cancelled.
+Custom code must observe the signal and release its own resources in `finally` / `deactivate`.
+Talos stops an unresponsive process after a cancellation grace period.

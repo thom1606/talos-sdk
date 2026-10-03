@@ -1,10 +1,10 @@
-import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { isAbsolute } from 'node:path';
 import type { ReactNode } from 'react';
 import { activationContext } from './activation-context.js';
 import { respondWithAppleIntelligence, streamAppleIntelligence } from './apple-intelligence.js';
-import type { TalosContext, TalosFile } from './index.js';
+import type { TalosActivationContext, TalosContext, TalosFile } from './index.js';
+import { executeProcess } from './process.js';
 import { reactWindowPage, serializeWindowTree } from './window-tree.js';
 
 /** A native preview window containing Markdown or React components. */
@@ -16,7 +16,7 @@ export interface TalosWindowOptions {
   onRequest?: (
     method: string,
     payload: unknown,
-    context: TalosContext,
+    context: TalosActivationContext,
     signal: AbortSignal,
   ) => unknown | Promise<unknown>;
   /** JSX containing imported .tsx components and serializable props. */
@@ -260,103 +260,28 @@ interface AppleScriptExecutionOptions {
   timeout: number;
 }
 
-function executeAppleScript(
+async function executeAppleScript(
   script: string,
   arguments_: string[],
   options: AppleScriptExecutionOptions,
 ): Promise<RunAppleScriptOutput> {
   const executable = '/usr/bin/osascript';
   const outputStyle = options.humanReadableOutput ? 'h' : 's';
-  const processArguments = ['-l', options.language, '-s', outputStyle, '-', ...arguments_];
-
-  return new Promise((resolve, reject) => {
-    if (options.signal?.aborted) {
-      reject(abortError());
-      return;
-    }
-
-    const child = spawn(executable, processArguments, {
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    child.stdout.setEncoding('utf8');
-    child.stderr.setEncoding('utf8');
-
-    let stdout = '';
-    let stderr = '';
-    let timedOut = false;
-    let aborted = false;
-    let bufferExceeded = false;
-    let settled = false;
-    const maximumOutputLength = 1_048_576;
-
-    const appendOutput = (current: string, chunk: string): string => {
-      const output = current + chunk;
-      if (output.length > maximumOutputLength) {
-        bufferExceeded = true;
-        child.kill('SIGTERM');
-      }
-      return output;
-    };
-
-    child.stdout.on('data', (chunk: string) => {
-      stdout = appendOutput(stdout, chunk);
-    });
-    child.stderr.on('data', (chunk: string) => {
-      stderr = appendOutput(stderr, chunk);
-    });
-
-    const timeoutHandle =
-      options.timeout > 0
-        ? setTimeout(() => {
-            timedOut = true;
-            child.kill('SIGTERM');
-          }, options.timeout)
-        : undefined;
-
-    const handleAbort = () => {
-      aborted = true;
-      child.kill('SIGTERM');
-    };
-    options.signal?.addEventListener('abort', handleAbort, { once: true });
-
-    const finish = (
-      exitCode: number | null,
-      signal: NodeJS.Signals | null,
-      processError?: Error,
-    ) => {
-      if (settled) return;
-      settled = true;
-      if (timeoutHandle) clearTimeout(timeoutHandle);
-      options.signal?.removeEventListener('abort', handleAbort);
-
-      const cleanStdout = stripFinalNewline(stdout);
-      const cleanStderr = stripFinalNewline(stderr);
-      let error = processError;
-      if (!error && aborted) {
-        error = abortError();
-      } else if (!error && timedOut) {
-        error = new Error(`AppleScript execution timed out after ${options.timeout}ms`);
-      } else if (!error && bufferExceeded) {
-        error = new Error('AppleScript output exceeded 1 MB');
-      } else if (!error && exitCode !== 0) {
-        error = new Error(cleanStderr || `AppleScript exited with code ${exitCode ?? 'unknown'}`);
-      }
-
-      resolve({
-        stdout: cleanStdout,
-        stderr: cleanStderr,
-        ...(error ? { error } : {}),
-        exitCode,
-        signal,
-        timedOut,
-        command: executable,
-      });
-    };
-
-    child.once('error', (error) => finish(null, null, error));
-    child.once('close', (exitCode, signal) => finish(exitCode, signal));
-    child.stdin.end(script);
-  });
+  const output = await executeProcess(
+    executable,
+    ['-l', options.language, '-s', outputStyle, '-', ...arguments_],
+    {
+      input: script,
+      timeout: options.timeout,
+      ...(options.signal ? { signal: options.signal } : {}),
+    },
+  );
+  return {
+    ...output,
+    stdout: stripFinalNewline(output.stdout),
+    stderr: stripFinalNewline(output.stderr),
+    command: executable,
+  };
 }
 
 function sendRuntimeMessage(message: RuntimeMessage): void {
@@ -389,10 +314,4 @@ function validateDimension(value: number | undefined, label: string): void {
 
 function stripFinalNewline(value: string): string {
   return value.endsWith('\r\n') ? value.slice(0, -2) : value.replace(/\n$/, '');
-}
-
-function abortError(): Error {
-  const error = new Error('AppleScript execution was aborted');
-  error.name = 'AbortError';
-  return error;
 }

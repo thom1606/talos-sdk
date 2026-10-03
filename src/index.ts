@@ -17,8 +17,15 @@ export interface TalosFile {
   contentType: string;
 }
 
+/** Node-only invocation scope. Window data remains serializable TalosContext. */
+export interface TalosActivationContext<
+  Config extends Record<keyof Config, TalosConfigValue> = TalosConfig,
+> extends TalosContext<Config> {
+  readonly signal: AbortSignal;
+}
+
 export type Activate<Config extends Record<keyof Config, TalosConfigValue> = TalosConfig> = (
-  context: TalosContext<Config>,
+  context: TalosActivationContext<Config>,
 ) => void | Promise<void>;
 
 export type Deactivate = () => void | Promise<void>;
@@ -66,6 +73,7 @@ export interface TalosPackageConfiguration {
   windows?: Record<string, string>;
 }
 
+export { defineAction, defineActions } from './actions.js';
 export type { TextParameters } from './localization.js';
 export { t } from './localization.js';
 export type {
